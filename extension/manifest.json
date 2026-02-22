@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Web自动化录制",
+  "version": "1.0",
+  "description": "录制用户操作，生成自动化测试用例",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  }
+}
