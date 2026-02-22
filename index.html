@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web自动化测试工具</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            min-height: 100vh;
+            color: #fff;
+            padding: 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { text-align: center; margin-bottom: 30px; }
+        
+        .card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .card h3 { margin-bottom: 15px; color: #e94560; }
+        
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; color: rgba(255,255,255,0.7); }
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(0,0,0,0.3);
+            color: #fff;
+            font-size: 14px;
+        }
+        
+        .btn-group { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; }
+        button {
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        button { background: #e94560; color: #fff; }
+        button:hover { opacity: 0.9; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        /* 步骤列表 */
+        .steps-container {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+        .step-item {
+            background: rgba(0,0,0,0.2);
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            border-left: 3px solid #e94560;
+            font-size: 13px;
+        }
+        .step-item.action-click { border-left-color: #3498db; }
+        .step-item.action-input { border-left-color: #2ecc71; }
+        .step-item.action-navigate { border-left-color: #9b59b6; }
+        .step-item.action-select { border-left-color: #f39c12; }
+        
+        .step-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        .step-action {
+            background: #e94560;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+        .step-time { color: rgba(255,255,255,0.5); font-size: 11px; }
+        .step-selector {
+            color: #2ecc71;
+            font-family: monospace;
+            font-size: 12px;
+            word-break: break-all;
+        }
+        
+        /* 悬浮窗 */
+        .float-window {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 360px;
+            max-height: 500px;
+            background: rgba(26, 26, 46, 0.98);
+            border: 1px solid rgba(233, 69, 96, 0.5);
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            z-index: 1000;
+            overflow: hidden;
+            display: none;
+        }
+        
+        .float-window.show { display: block; }
+        
+        .float-header {
+            background: linear-gradient(135deg, #e94560, #ff6b8a);
+            padding: 12px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: move;
+        }
+        .float-header h4 { font-size: 14px; }
+        .float-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ccc;
+        }
+        .status-dot.recording { background: #ff0; animation: blink 1s infinite; }
+        .status-dot.connected { background: #0f0; }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        .float-close {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 0;
+        }
+        
+        .float-content {
+            padding: 12px;
+            max-height: 350px;
+            overflow-y: auto;
+        }
+        
+        .float-step {
+            background: rgba(255,255,255,0.05);
+            padding: 8px 10px;
+            margin-bottom: 6px;
+            border-radius: 6px;
+            font-size: 12px;
+            border-left: 2px solid #e94560;
+        }
+        
+        .float-empty {
+            text-align: center;
+            color: rgba(255,255,255,0.5);
+            padding: 30px;
+            font-size: 13px;
+        }
+        
+        .float-footer {
+            padding: 10px 12px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            gap: 8px;
+        }
+        
+        .float-footer button {
+            flex: 1;
+            padding: 8px;
+            font-size: 12px;
+        }
+        
+        .btn-stop-float { background: #666; }
+        
+        /* 元素信息 */
+        .element-info {
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-size: 12px;
+        }
+        .element-info p { margin: 3px 0; }
+        .element-info .label { color: rgba(255,255,255,0.5); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌐 Web自动化测试工具</h1>
+        
+        <!-- 录制控制 -->
+        <div class="card">
+            <h3>📹 录制控制</h3>
+            <p style="color: rgba(255,255,255,0.7); margin-bottom: 15px;">
+                1. 安装扩展文件 → 2. 加载到Chrome → 3. 开始录制
+            </p>
+            <div class="btn-group">
+                <button onclick="downloadExtension()">📦 下载扩展</button>
+                <button onclick="toggleFloatWindow()" id="btnFloat">🪟 打开悬浮窗</button>
+            </div>
+        </div>
+        
+        <!-- 手动操作 -->
+        <div class="card">
+            <h3>🖱 手动操作</h3>
+            <div class="form-group">
+                <label>目标网址</label>
+                <input type="text" id="url" placeholder="https://example.com" value="https://example.com">
+            </div>
+            <div class="btn-group">
+                <button onclick="openUrl()">🚀 打开</button>
+                <button onclick="takeScreenshot()">📷 截图</button>
+                <button onclick="getElements()">🔍 获取元素</button>
+                <button onclick="clearSteps()">🗑 清空步骤</button>
+            </div>
+        </div>
+        
+        <!-- 已录制的步骤 -->
+        <div class="card">
+            <h3>📝 录制步骤列表 <span id="stepCount">(0)</span></h3>
+            <div class="steps-container" id="stepsList">
+                <p style="color: rgba(255,255,255,0.5); text-align: center; padding: 20px;">
+                    暂无步骤，请开始录制或手动添加操作
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 悬浮窗 -->
+    <div class="float-window" id="floatWindow">
+        <div class="float-header">
+            <div class="float-status">
+                <span class="status-dot" id="wsStatus"></span>
+                <span id="floatTitle">录制监控</span>
+            </div>
+            <button class="float-close" onclick="toggleFloatWindow()">×</button>
+        </div>
+        <div class="float-content" id="floatContent">
+            <div class="float-empty">等待录制数据...</div>
+        </div>
+        <div class="float-footer">
+            <button onclick="clearSteps()">清空</button>
+            <button class="btn-stop-float" onclick="exportSteps()">导出JSON</button>
+        </div>
+    </div>
+    
+    <script>
+        const API = 'http://119.91.23.169:5001/api';
+        let steps = [];
+        let ws = null;
+        let wsConnected = false;
+        
+        // WebSocket连接
+        function connectWS() {
+            ws = new WebSocket('ws://119.91.23.169:5002');
+            
+            ws.onopen = () => {
+                console.log('WebSocket已连接');
+                wsConnected = true;
+                updateWSStatus();
+            };
+            
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    console.log('收到消息:', data);
+                    
+                    if (data.type === 'newStep') {
+                        addStep(data.data);
+                    }
+                } catch (e) {
+                    console.error('消息解析失败:', e);
+                }
+            };
+            
+            ws.onclose = () => {
+                console.log('WebSocket断开，3秒后重连...');
+                wsConnected = false;
+                updateWSStatus();
+                setTimeout(connectWS, 3000);
+            };
+            
+            ws.onerror = (error) => {
+                console.error('WebSocket错误:', error);
+            };
+        }
+        
+        function updateWSStatus() {
+            const dot = document.getElementById('wsStatus');
+            if (wsConnected) {
+                dot.className = 'status-dot connected';
+            } else {
+                dot.className = 'status-dot';
+            }
+        }
+        
+        // 添加步骤
+        function addStep(step) {
+            steps.push(step);
+            renderSteps();
+            
+            // 同步到悬浮窗
+            const floatContent = document.getElementById('floatContent');
+            const empty = floatContent.querySelector('.float-empty');
+            if (empty) empty.remove();
+            
+            const div = document.createElement('div');
+            div.className = 'float-step';
+            div.innerHTML = `
+                <strong>${step.action}</strong>
+                ${step.selector ? '<br><code style="color:#2ecc71">' + step.selector + '</code>' : ''}
+                ${step.value ? '<br>值: ' + step.value : ''}
+            `;
+            floatContent.insertBefore(div, floatContent.firstChild);
+            
+            // 保持最多20条
+            while (floatContent.children.length > 20) {
+                floatContent.removeChild(floatContent.lastChild);
+            }
+        }
+        
+        // 渲染步骤列表
+        function renderSteps() {
+            const container = document.getElementById('stepsList');
+            document.getElementById('stepCount').textContent = `(${steps.length})`;
+            
+            if (steps.length === 0) {
+                container.innerHTML = '<p style="color: rgba(255,255,255,0.5); text-align: center; padding: 20px;">暂无步骤</p>';
+                return;
+            }
+            
+            container.innerHTML = steps.map((step, i) => `
+                <div class="step-item action-${step.action}">
+                    <div class="step-header">
+                        <span class="step-action">${step.action}</span>
+                        <span class="step-time">${new Date(step.timestamp || Date.now()).toLocaleTimeString()}</span>
+                    </div>
+                    ${step.selector ? `<div class="step-selector">${step.selector}</div>` : ''}
+                    ${step.value ? `<div style="color:#f39c12;margin-top:3px;">值: ${step.value}</div>` : ''}
+                    ${step.url ? `<div style="color:#9b59b6;margin-top:3px;">→ ${step.url}</div>` : ''}
+                </div>
+            `).join('');
+        }
+        
+        // 清空步骤
+        function clearSteps() {
+            steps = [];
+            renderSteps();
+            document.getElementById('floatContent').innerHTML = '<div class="float-empty">等待录制数据...</div>';
+        }
+        
+        // 导出步骤
+        function exportSteps() {
+            const json = JSON.stringify(steps, null, 2);
+            const blob = new Blob([json], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'recording-' + Date.now() + '.json';
+            a.click();
+        }
+        
+        // 切换悬浮窗
+        function toggleFloatWindow() {
+            const win = document.getElementById('floatWindow');
+            win.classList.toggle('show');
+        }
+        
+        // 下载扩展
+        function downloadExtension() {
+            alert('请将 extension 文件夹加载到 Chrome 扩展程序中:\n1. 打开 chrome://extensions/\n2. 开启"开发者模式"\n3. 点击"加载已解压的扩展程序"\n4. 选择 extension 文件夹');
+        }
+        
+        // API函数
+        async function request(url, data) {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            return res.json();
+        }
+        
+        async function openUrl() {
+            const url = document.getElementById('url').value;
+            const result = await request(API + '/open', {url});
+            if (result.code === 200) {
+                addStep({action: 'open', url: result.data.url, title: result.data.title});
+                alert('打开成功: ' + result.data.title);
+            } else {
+                alert('失败: ' + result.message);
+            }
+        }
+        
+        async function takeScreenshot() {
+            const url = document.getElementById('url').value;
+            const result = await request(API + '/screenshot', {url});
+            if (result.code === 200) {
+                alert('截图成功');
+            } else {
+                alert('失败: ' + result.message);
+            }
+        }
+        
+        async function getElements() {
+            const url = document.getElementById('url').value;
+            const result = await request(API + '/elements', {url});
+            if (result.code === 200) {
+                alert('获取到 ' + result.data.count + ' 个元素');
+            } else {
+                alert('失败: ' + result.message);
+            }
+        }
+        
+        // 初始化
+        connectWS();
+    </script>
+</body>
+</html>
