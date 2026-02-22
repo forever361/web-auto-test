@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web自动化录制平台</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            min-height: 100vh;
+            color: #fff;
+            padding: 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        
+        /* 顶部标题 */
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        .header p {
+            color: rgba(255,255,255,0.6);
+            font-size: 14px;
+        }
+        
+        /* 卡片 */
+        .card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .card h3 {
+            margin-bottom: 15px;
+            color: #e94560;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* 功能按钮组 */
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+        button {
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        button { background: #e94560; color: #fff; }
+        button:hover { opacity: 0.9; transform: translateY(-1px); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        
+        .btn-primary { background: #e94560; }
+        .btn-success { background: #2ecc71; }
+        .btn-warning { background: #f39c12; }
+        .btn-info { background: #3498db; }
+        .btn-secondary { background: #6c757d; }
+        
+        /* 连接状态 */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #666;
+        }
+        .status-dot.connected { background: #2ecc71; }
+        .status-dot.recording { 
+            background: #e94560; 
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(233,69,96,0.7); }
+            50% { opacity: 0.8; box-shadow: 0 0 0 8px rgba(233,69,96,0); }
+        }
+        
+        /* 步骤列表 */
+        .steps-container {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .step-item {
+            background: rgba(0,0,0,0.2);
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            border-left: 4px solid #e94560;
+            transition: all 0.2s;
+        }
+        .step-item:hover {
+            background: rgba(0,0,0,0.3);
+        }
+        .step-item.action-click { border-left-color: #3498db; }
+        .step-item.action-input { border-left-color: #2ecc71; }
+        .step-item.action-change { border-left-color: #f39c12; }
+        .step-item.action-navigate { border-left-color: #9b59b6; }
+        .step-item.action-scroll { border-left-color: #1abc9c; }
+        
+        .step-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .step-number {
+            background: #e94560;
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .step-action {
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+        .action-click .step-action { background: #3498db; }
+        .action-input .step-action { background: #2ecc71; }
+        .action-change .step-action { background: #f39c12; }
+        .action-navigate .step-action { background: #9b59b6; }
+        .action-scroll .step-action { background: #1abc9c; }
+        
+        .step-time {
+            color: rgba(255,255,255,0.5);
+            font-size: 12px;
+        }
+        .step-details {
+            margin-top: 8px;
+        }
+        .step-selector {
+            color: #2ecc71;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 12px;
+            background: rgba(0,0,0,0.3);
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            word-break: break-all;
+        }
+        .step-value {
+            color: #f39c12;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+        .step-element-info {
+            color: #3498db;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+        
+        /* 统计信息 */
+        .stats-bar {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+        .stat-item {
+            background: rgba(0,0,0,0.2);
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #e94560;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: rgba(255,255,255,0.6);
+        }
+        
+        /* 悬浮窗 */
+        .float-window {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 380px;
+            max-height: 520px;
+            background: rgba(26, 26, 46, 0.98);
+            border: 1px solid rgba(233, 69, 96, 0.5);
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            z-index: 1000;
+            overflow: hidden;
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+        .float-window.show { display: block; }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .float-header {
+            background: linear-gradient(135deg, #e94560, #ff6b8a);
+            padding: 14px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: move;
+        }
+        .float-header h4 {
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .float-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+        }
+        
+        .float-close {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+        
+        .float-content {
+            padding: 12px;
+            max-height: 340px;
+            overflow-y: auto;
+        }
+        
+        .float-step {
+            background: rgba(255,255,255,0.05);
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            font-size: 12px;
+            border-left: 3px solid #e94560;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .float-step .action {
+            font-weight: bold;
+            color: #e94560;
+            text-transform: uppercase;
+            font-size: 11px;
+        }
+        .float-step .selector {
+            color: #2ecc71;
+            font-family: monospace;
+            font-size: 11px;
+            margin-top: 4px;
+            word-break: break-all;
+        }
+        
+        .float-empty {
+            text-align: center;
+            color: rgba(255,255,255,0.5);
+            padding: 40px 20px;
+            font-size: 13px;
+        }
+        
+        .float-footer {
+            padding: 12px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            gap: 8px;
+        }
+        .float-footer button {
+            flex: 1;
+            padding: 10px;
+            font-size: 12px;
+        }
+        
+        .btn-stop { background: #6c757d; }
+        .btn-pause { background: #f39c12; }
+        
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: rgba(255,255,255,0.5);
+        }
+        .empty-state .icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        
+        /* 滚动条 */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        ::-webkit-scrollbar-thumb { background: #e94560; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #ff6b8a; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 顶部标题 -->
+        <div class="header">
+            <h1>🌐 Web自动化录制平台</h1>
+            <p>基于 Chrome 扩展的 Web 自动化录制工具</p>
+        </div>
+        
+        <!-- 连接状态 -->
+        <div class="status-bar">
+            <div class="status-item">
+                <span class="status-dot" id="wsStatus"></span>
+                <span id="wsStatusText">未连接</span>
+            </div>
+            <div class="status-item">
+                <span>📊 录制步骤: </span>
+                <span id="stepCount" style="color: #e94560; font-weight: bold;">0</span>
+            </div>
+            <div class="status-item">
+                <span class="status-dot" id="recordStatus"></span>
+                <span id="recordStatusText">等待录制</span>
+            </div>
+        </div>
+        
+        <!-- 功能卡片 -->
+        <div class="card">
+            <h3>📦 扩展与录制</h3>
+            <div class="btn-group">
+                <button class="btn-info" onclick="downloadExtension()">📦 下载扩展</button>
+                <button class="btn-primary" onclick="startRecording()" id="btnStart">
+                    ▶️ 开始录制
+                </button>
+                <button class="btn-warning" onclick="pauseRecording()" id="btnPause" disabled>
+                    ⏸ 暂停
+                </button>
+                <button class="btn-secondary" onclick="stopRecording()" id="btnStop" disabled>
+                    ⏹ 停止
+                </button>
+                <button class="btn-success" onclick="exportCase()">💾 导出用例</button>
+            </div>
+            <p style="color: rgba(255,255,255,0.6); font-size: 13px; margin-top: 10px;">
+                📌 使用流程: 1) 下载并安装扩展 → 2) 在Chrome中加载扩展 → 3) 点击扩展图标开始录制
+            </p>
+        </div>
+        
+        <!-- 统计 -->
+        <div class="card">
+            <h3>📈 录制统计</h3>
+            <div class="stats-bar">
+                <div class="stat-item">
+                    <div class="stat-value" id="statClicks">0</div>
+                    <div class="stat-label">点击次数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="statInputs">0</div>
+                    <div class="stat-label">输入次数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="statNavigates">0</div>
+                    <div class="stat-label">页面跳转</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="statScrolls">0</div>
+                    <div class="stat-label">滚动次数</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 步骤列表 -->
+        <div class="card">
+            <h3>📝 录制步骤列表</h3>
+            <div class="btn-group" style="margin-bottom: 15px;">
+                <button class="btn-secondary" onclick="clearSteps()">🗑 清空</button>
+                <button class="btn-info" onclick="toggleFloatWindow()" id="btnFloat">
+                    🪟 悬浮窗
+                </button>
+            </div>
+            <div class="steps-container" id="stepsList">
+                <div class="empty-state">
+                    <div class="icon">📹</div>
+                    <p>暂无录制步骤</p>
+                    <p style="font-size: 12px; margin-top: 10px;">安装扩展并点击开始录制后，步骤将实时显示在这里</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 悬浮窗 -->
+    <div class="float-window" id="floatWindow">
+        <div class="float-header">
+            <div class="float-status">
+                <span class="status-dot" id="floatRecordStatus"></span>
+                <span id="floatTitle">录制监控</span>
+            </div>
+            <button class="float-close" onclick="toggleFloatWindow()">×</button>
+        </div>
+        <div class="float-content" id="floatContent">
+            <div class="float-empty">
+                <div style="font-size: 24px; margin-bottom: 10px;">📹</div>
+                等待录制数据...
+            </div>
+        </div>
+        <div class="float-footer">
+            <button class="btn-stop" onclick="clearSteps()">清空</button>
+            <button class="btn-success" onclick="exportCase()">导出用例</button>
+        </div>
+    </div>
+    
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+    <script>
+        const API = 'http://119.91.23.169:5001/api';
+        const WS_URL = 'http://119.91.23.169:5001';
+        
+        let steps = [];
+        let socket = null;
+        let wsConnected = false;
+        let isRecording = false;
+        let isPaused = false;
+        
+        // 统计数据
+        let stats = { click: 0, input: 0, navigate: 0, scroll: 0, change: 0 };
+        
+        // Socket.IO 连接
+        function connectWS() {
+            socket = io(WS_URL);
+            
+            socket.on('connect', () => {
+                console.log('Socket.IO 已连接');
+                wsConnected = true;
+                updateStatus();
+            });
+            
+            socket.on('newStep', (data) => {
+                console.log('收到步骤:', data);
+                addStep(data);
+            });
+            
+            socket.on('recordingStatus', (data) => {
+                console.log('录制状态:', data);
+                updateRecordingStatus(data);
+            });
+            
+            socket.on('disconnect', () => {
+                console.log('Socket.IO 断开');
+                wsConnected = false;
+                updateStatus();
+            });
+            
+            socket.on('connect_error', (error) => {
+                console.error('Socket.IO 连接错误:', error);
+                wsConnected = false;
+                updateStatus();
+            });
+        }
+        
+        // 更新连接状态
+        function updateStatus() {
+            const wsDot = document.getElementById('wsStatus');
+            const wsText = document.getElementById('wsStatusText');
+            if (wsConnected) {
+                wsDot.className = 'status-dot connected';
+                wsText.textContent = '已连接';
+            } else {
+                wsDot.className = 'status-dot';
+                wsText.textContent = '未连接';
+            }
+        }
+        
+        // 更新录制状态
+        function updateRecordingStatus(status) {
+            isRecording = status.recording;
+            isPaused = status.paused || false;
+            
+            const recordDot = document.getElementById('recordStatus');
+            const recordText = document.getElementById('recordStatusText');
+            const floatDot = document.getElementById('floatRecordStatus');
+            
+            if (isRecording && !isPaused) {
+                recordDot.className = 'status-dot recording';
+                recordText.textContent = '录制中';
+                floatDot.className = 'status-dot recording';
+                document.getElementById('btnStart').disabled = true;
+                document.getElementById('btnPause').disabled = false;
+                document.getElementById('btnStop').disabled = false;
+            } else if (isRecording && isPaused) {
+                recordDot.className = 'status-dot';
+                recordText.textContent = '已暂停';
+                floatDot.className = 'status-dot';
+            } else {
+                recordDot.className = 'status-dot';
+                recordText.textContent = '等待录制';
+                floatDot.className = 'status-dot';
+                document.getElementById('btnStart').disabled = false;
+                document.getElementById('btnPause').disabled = true;
+                document.getElementById('btnStop').disabled = true;
+            }
+        }
+        
+        // 添加步骤
+        function addStep(step) {
+            step.timestamp = step.timestamp || Date.now();
+            steps.push(step);
+            
+            // 更新统计
+            const action = step.action.toLowerCase();
+            if (action === 'click') stats.click++;
+            else if (action === 'input' || action === 'fill') stats.input++;
+            else if (action === 'navigate' || action === 'goto') stats.navigate++;
+            else if (action === 'scroll') stats.scroll++;
+            else if (action === 'change' || action === 'select') stats.change++;
+            
+            updateStats();
+            renderSteps();
+            renderFloatStep(step);
+        }
+        
+        // 更新统计显示
+        function updateStats() {
+            document.getElementById('statClicks').textContent = stats.click;
+            document.getElementById('statInputs').textContent = stats.input;
+            document.getElementById('statNavigates').textContent = stats.navigate;
+            document.getElementById('statScrolls').textContent = stats.scroll;
+            document.getElementById('stepCount').textContent = steps.length;
+        }
+        
+        // 渲染步骤列表
+        function renderSteps() {
+            const container = document.getElementById('stepsList');
+            
+            if (steps.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">📹</div>
+                        <p>暂无录制步骤</p>
+                        <p style="font-size: 12px; margin-top: 10px;">安装扩展并点击开始录制后，步骤将实时显示在这里</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = steps.map((step, i) => `
+                <div class="step-item action-${step.action.toLowerCase()}">
+                    <div class="step-header">
+                        <span class="step-number">#${i + 1}</span>
+                        <span class="step-action">${step.action}</span>
+                        <span class="step-time">${new Date(step.timestamp).toLocaleTimeString()}</span>
+                    </div>
+                    ${step.selector ? `<div class="step-details"><span class="step-selector">${step.selector}</span></div>` : ''}
+                    ${step.value ? `<div class="step-value">值: ${step.value}</div>` : ''}
+                    ${step.elementInfo ? `<div class="step-element-info">元素: ${step.elementInfo}</div>` : ''}
+                    ${step.url ? `<div class="step-element-info">→ ${step.url}</div>` : ''}
+                </div>
+            `).join('');
+            
+            // 滚动到最新
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        // 渲染悬浮窗步骤
+        function renderFloatStep(step) {
+            const floatContent = document.getElementById('floatContent');
+            const empty = floatContent.querySelector('.float-empty');
+            if (empty) empty.remove();
+            
+            const div = document.createElement('div');
+            div.className = 'float-step';
+            div.innerHTML = `
+                <div class="action">${step.action}</div>
+                ${step.selector ? `<div class="selector">${step.selector}</div>` : ''}
+                ${step.value ? `<div style="color:#f39c12;margin-top:4px;">值: ${step.value}</div>` : ''}
+            `;
+            floatContent.insertBefore(div, floatContent.firstChild);
+            
+            // 保持最多30条
+            while (floatContent.children.length > 30) {
+                floatContent.removeChild(floatContent.lastChild);
+            }
+        }
+        
+        // 清空步骤
+        function clearSteps() {
+            steps = [];
+            stats = { click: 0, input: 0, navigate: 0, scroll: 0, change: 0 };
+            updateStats();
+            renderSteps();
+            document.getElementById('floatContent').innerHTML = `
+                <div class="float-empty">
+                    <div style="font-size: 24px; margin-bottom: 10px;">📹</div>
+                    等待录制数据...
+                </div>
+            `;
+        }
+        
+        // 导出用例
+        function exportCase() {
+            if (steps.length === 0) {
+                alert('没有步骤可导出');
+                return;
+            }
+            const data = {
+                name: '录制用例 ' + new Date().toLocaleString(),
+                created: new Date().toISOString(),
+                steps: steps
+            };
+            const json = JSON.stringify(data, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'test-case-' + Date.now() + '.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        // 录制控制
+        function startRecording() {
+            if (socket && wsConnected) {
+                socket.emit('startRecording');
+            }
+            updateRecordingStatus({ recording: true, paused: false });
+        }
+        
+        function pauseRecording() {
+            if (socket && wsConnected) {
+                socket.emit('pauseRecording');
+            }
+            updateRecordingStatus({ recording: true, paused: !isPaused });
+        }
+        
+        function stopRecording() {
+            if (socket && wsConnected) {
+                socket.emit('stopRecording');
+            }
+            updateRecordingStatus({ recording: false, paused: false });
+        }
+        
+        // 切换悬浮窗
+        function toggleFloatWindow() {
+            const win = document.getElementById('floatWindow');
+            win.classList.toggle('show');
+            document.getElementById('btnFloat').classList.toggle('btn-primary');
+        }
+        
+        // 下载扩展
+        function downloadExtension() {
+            window.open('/api/extension', '_blank');
+        }
+        
+        // API 请求
+        async function request(url, data) {
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                return res.json();
+            } catch (e) {
+                console.error('请求失败:', e);
+                return { code: 500, message: e.message };
+            }
+        }
+        
+        // 初始化
+        connectWS();
+    </script>
+</body>
+</html>
