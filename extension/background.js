@@ -15,6 +15,7 @@ function sendStep(step) {
     }
   };
   
+  // 发送到服务器
   fetch(API_URL + '/api/push-step', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -26,6 +27,13 @@ function sendStep(step) {
   })
   .catch(err => {
     console.error('[Background] Failed to send step:', err);
+  });
+  
+  // 广播给所有标签页的content script（用于悬浮窗显示）
+  chrome.tabs.query({}, (tabs) => {
+    tabs.forEach(tab => {
+      chrome.tabs.sendMessage(tab.id, {action: 'step', data: step}).catch(() => {});
+    });
   });
 }
 
@@ -93,6 +101,30 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     
     broadcastStatus('stopped');
     sendResponse({success: true, recording: false});
+    return true;
+  }
+  
+  else if (message.action === 'pauseRecording') {
+    sendRecordingStatus({ recording: true, paused: true });
+    chrome.tabs.query({}, (tabs) => {
+      tabs.forEach(tab => {
+        chrome.tabs.sendMessage(tab.id, {action: 'recordingStatus', recording: true, paused: true}).catch(() => {});
+      });
+    });
+    broadcastStatus('paused');
+    sendResponse({success: true});
+    return true;
+  }
+  
+  else if (message.action === 'resumeRecording') {
+    sendRecordingStatus({ recording: true, paused: false });
+    chrome.tabs.query({}, (tabs) => {
+      tabs.forEach(tab => {
+        chrome.tabs.sendMessage(tab.id, {action: 'recordingStatus', recording: true, paused: false}).catch(() => {});
+      });
+    });
+    broadcastStatus('recording');
+    sendResponse({success: true});
     return true;
   }
   

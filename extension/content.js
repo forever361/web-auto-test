@@ -265,7 +265,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   else if (message.action === 'recordingStatus') {
     // 接收全局录制状态更新
     recording = message.recording;
-    updateFloatingUI(recording);
+    updateFloatingUI(recording, paused);
+    sendResponse({success: true});
+  }
+  
+  else if (message.action === 'step') {
+    // 添加步骤到悬浮窗显示
+    if (message.data) {
+      addStepToFloat(message.data);
+    }
     sendResponse({success: true});
   }
   
@@ -290,152 +298,346 @@ function createFloatingPanel() {
   
   const panel = document.createElement('div');
   panel.id = 'web-recorder-float';
-  panel.innerHTML = `
+  panel.innerHTML = \`
     <style>
       #web-recorder-float {
         position: fixed;
-        top: 20px;
+        top: 100px;
         right: 20px;
         z-index: 2147483647;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        font-size: 14px;
+        font-size: 13px;
+        color: #333;
+        user-select: none;
       }
-      #web-recorder-float .recorder-btn {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        border: none;
-        cursor: pointer;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      #web-recorder-float .float-handle {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 32px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 8px 8px 0 0;
+        cursor: move;
         display: flex;
         align-items: center;
-        justify-content: center;
-        transition: all 0.3s;
-        font-size: 20px;
-      }
-      #web-recorder-float .recorder-btn.start {
-        background: #e94560;
+        justify-content: space-between;
+        padding: 0 12px;
         color: white;
+        font-weight: 600;
       }
-      #web-recorder-float .recorder-btn.recording {
-        background: #e94560;
-        color: white;
-        animation: pulse 1.5s infinite;
+      #web-recorder-float .float-handle .title {
+        font-size: 13px;
       }
-      #web-recorder-float .recorder-panel {
-        position: absolute;
-        top: 60px;
-        right: 0;
-        background: white;
-        border-radius: 8px;
-        padding: 12px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      #web-recorder-float .float-handle .minimize-btn {
+        cursor: pointer;
+        opacity: 0.8;
+        font-size: 16px;
+        width: 20px;
+        text-align: center;
+      }
+      #web-recorder-float .float-handle .minimize-btn:hover {
+        opacity: 1;
+      }
+      #web-recorder-float .float-body {
+        background: #1e1e1e;
+        border-radius: 0 0 8px 8px;
+        width: 320px;
+        max-height: 400px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      }
+      #web-recorder-float .float-body.minimized {
         display: none;
-        min-width: 150px;
       }
-      #web-recorder-float .recorder-panel.show {
-        display: block;
+      #web-recorder-float .control-bar {
+        display: flex;
+        gap: 8px;
+        padding: 12px;
+        background: #2d2d2d;
+        border-bottom: 1px solid #404040;
       }
-      #web-recorder-float .recorder-panel button {
-        width: 100%;
-        padding: 10px 16px;
-        margin: 4px 0;
+      #web-recorder-float .control-bar button {
+        flex: 1;
+        padding: 8px 12px;
         border: none;
         border-radius: 6px;
         cursor: pointer;
-        font-size: 14px;
-        transition: all 0.2s;
-      }
-      #web-recorder-float .recorder-panel .btn-start {
-        background: #2ecc71;
-        color: white;
-      }
-      #web-recorder-float .recorder-panel .btn-stop {
-        background: #e94560;
-        color: white;
-      }
-      #web-recorder-float .recorder-panel .btn-stop:hover {
-        background: #c0392b;
-      }
-      #web-recorder-float .recorder-panel .status-text {
-        text-align: center;
-        padding: 8px;
-        color: #333;
+        font-size: 12px;
         font-weight: 500;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+      }
+      #web-recorder-float .control-bar .btn-start { background: #10b981; color: white; }
+      #web-recorder-float .control-bar .btn-start:hover { background: #059669; }
+      #web-recorder-float .control-bar .btn-pause { background: #f59e0b; color: white; }
+      #web-recorder-float .control-bar .btn-pause:hover { background: #d97706; }
+      #web-recorder-float .control-bar .btn-pause.paused { background: #6366f1; }
+      #web-recorder-float .control-bar .btn-stop { background: #ef4444; color: white; }
+      #web-recorder-float .control-bar .btn-stop:hover { background: #dc2626; }
+      #web-recorder-float .status-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 12px;
+        background: #252525;
+        border-bottom: 1px solid #404040;
+        font-size: 12px;
+        color: #aaa;
+      }
+      #web-recorder-float .status-bar .status-text {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      #web-recorder-float .status-bar .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #666;
+      }
+      #web-recorder-float .status-bar .status-dot.recording {
+        background: #ef4444;
+        animation: pulse 1s infinite;
+      }
+      #web-recorder-float .status-bar .status-dot.paused { background: #f59e0b; }
+      #web-recorder-float .status-bar .coords {
+        font-family: monospace;
+        font-size: 11px;
+        color: #888;
+      }
+      #web-recorder-float .steps-container {
+        flex: 1;
+        overflow-y: auto;
+        padding: 8px;
+        background: #1a1a1a;
+      }
+      #web-recorder-float .step-item {
+        background: #2d2d2d;
+        border-radius: 6px;
+        padding: 10px;
+        margin-bottom: 6px;
+        border-left: 3px solid #667eea;
+      }
+      #web-recorder-float .step-item.action-click { border-left-color: #3b82f6; }
+      #web-recorder-float .step-item.action-input { border-left-color: #10b981; }
+      #web-recorder-float .step-item.action-navigate { border-left-color: #8b5cf6; }
+      #web-recorder-float .step-item .step-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 6px;
+      }
+      #web-recorder-float .step-item .step-action {
+        background: #667eea;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 500;
+        text-transform: uppercase;
+      }
+      #web-recorder-float .step-item .step-time {
+        font-size: 10px;
+        color: #888;
+      }
+      #web-recorder-float .step-item .step-selector {
+        font-family: monospace;
+        font-size: 11px;
+        color: #10b981;
+        word-break: break-all;
+        background: #1e1e1e;
+        padding: 4px 8px;
+        border-radius: 4px;
+        margin-bottom: 4px;
+      }
+      #web-recorder-float .step-item .step-value {
+        font-size: 11px;
+        color: #f59e0b;
       }
       @keyframes pulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.1); }
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+      }
+      #web-recorder-float .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: #666;
+      }
+      #web-recorder-float .empty-state .icon {
+        font-size: 40px;
+        margin-bottom: 10px;
       }
     </style>
-    <button class="recorder-btn start" id="floatToggleBtn">🎤</button>
-    <div class="recorder-panel" id="floatPanel">
-      <div class="status-text" id="floatStatus">点击开始录制</div>
-      <button class="btn-start" id="floatStartBtn">▶ 开始录制</button>
-      <button class="btn-stop" id="floatStopBtn" style="display:none;">⏹ 停止录制</button>
+    <div class="float-handle">
+      <span class="title">🎤 Web Recorder</span>
+      <span class="minimize-btn" id="floatMinimizeBtn">−</span>
     </div>
-  `;
+    <div class="float-body" id="floatBody">
+      <div class="control-bar">
+        <button class="btn-start" id="floatStartBtn">▶ 开始</button>
+        <button class="btn-pause" id="floatPauseBtn" style="display:none;">⏸ 暂停</button>
+        <button class="btn-stop" id="floatStopBtn" style="display:none;">⏹ 停止</button>
+      </div>
+      <div class="status-bar">
+        <div class="status-text">
+          <span class="status-dot" id="statusDot"></span>
+          <span id="statusText">等待录制</span>
+        </div>
+        <span class="coords" id="cursorCoords">x: 0, y: 0</span>
+      </div>
+      <div class="steps-container" id="stepsList">
+        <div class="empty-state">
+          <div class="icon">🎬</div>
+          <div>点击"开始"按钮开始录制</div>
+        </div>
+      </div>
+    </div>
+  \`;
   
   document.body.appendChild(panel);
   
-  // 绑定事件
-  const toggleBtn = document.getElementById('floatToggleBtn');
-  const floatPanel = document.getElementById('floatPanel');
-  const startBtn = document.getElementById('floatStartBtn');
-  const stopBtn = document.getElementById('floatStopBtn');
-  const statusText = document.getElementById('floatStatus');
+  // 拖动功能
+  const handle = panel.querySelector('.float-handle');
+  const floatBody = document.getElementById('floatBody');
+  let isDragging = false;
+  let dragOffsetX, dragOffsetY;
   
-  toggleBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    floatPanel.classList.toggle('show');
+  handle.addEventListener('mousedown', (e) => {
+    if (e.target.classList.contains('minimize-btn')) return;
+    isDragging = true;
+    dragOffsetX = e.clientX - panel.offsetLeft;
+    dragOffsetY = e.clientY - panel.offsetTop;
+    handle.style.cursor = 'grabbing';
   });
   
-  // 点击其他地方关闭面板
-  document.addEventListener('click', (e) => {
-    if (!floatPanel.contains(e.target)) {
-      floatPanel.classList.remove('show');
+  document.addEventListener('mousemove', (e) => {
+    const coordsEl = document.getElementById('cursorCoords');
+    if (coordsEl) {
+      coordsEl.textContent = \`x: \${e.clientX}, y: \${e.clientY}\`;
     }
+    
+    if (!isDragging) return;
+    panel.style.left = (e.clientX - dragOffsetX) + 'px';
+    panel.style.top = (e.clientY - dragOffsetY) + 'px';
+    panel.style.right = 'auto';
   });
   
-  // 开始录制
+  document.addEventListener('mouseup', () => {
+    isDragging = false;
+    handle.style.cursor = 'move';
+  });
+  
+  // 最小化/展开
+  const minimizeBtn = document.getElementById('floatMinimizeBtn');
+  minimizeBtn.addEventListener('click', () => {
+    floatBody.classList.toggle('minimized');
+    minimizeBtn.textContent = floatBody.classList.contains('minimized') ? '+' : '−';
+  });
+  
+  // 绑定按钮事件
+  const startBtn = document.getElementById('floatStartBtn');
+  const pauseBtn = document.getElementById('floatPauseBtn');
+  const stopBtn = document.getElementById('floatStopBtn');
+  
   startBtn.addEventListener('click', () => {
     recording = true;
+    paused = false;
     stepCount = 0;
-    updateFloatingUI(true);
+    steps = [];
+    updateFloatingUI(true, false);
     chrome.runtime.sendMessage({action: 'startRecording'}, () => {});
-    panel.classList.remove('show');
   });
   
-  // 停止录制
+  pauseBtn.addEventListener('click', () => {
+    paused = !paused;
+    updateFloatingUI(recording, paused);
+    chrome.runtime.sendMessage({
+      action: paused ? 'pauseRecording' : 'resumeRecording'
+    }, () => {});
+  });
+  
   stopBtn.addEventListener('click', () => {
     recording = false;
-    updateFloatingUI(false);
+    paused = false;
+    updateFloatingUI(false, false);
     chrome.runtime.sendMessage({action: 'stopRecording'}, () => {});
-    panel.classList.remove('show');
   });
   
   console.log('[Content] Floating panel created');
 }
 
-// 更新悬浮窗状态
-function updateFloatingUI(isRecording) {
-  const toggleBtn = document.getElementById('floatToggleBtn');
+// 录制步骤存储
+let steps = [];
+let paused = false;
+
+// 更新悬浮窗UI
+function updateFloatingUI(isRecording, isPaused) {
   const startBtn = document.getElementById('floatStartBtn');
+  const pauseBtn = document.getElementById('floatPauseBtn');
   const stopBtn = document.getElementById('floatStopBtn');
-  const statusText = document.getElementById('floatStatus');
+  const statusDot = document.getElementById('statusDot');
+  const statusText = document.getElementById('statusText');
   
   if (isRecording) {
-    toggleBtn.classList.remove('start');
-    toggleBtn.classList.add('recording');
     startBtn.style.display = 'none';
-    stopBtn.style.display = 'block';
-    statusText.textContent = '🔴 录制中...';
+    pauseBtn.style.display = 'flex';
+    stopBtn.style.display = 'flex';
+    
+    if (isPaused) {
+      statusDot.className = 'status-dot paused';
+      statusText.textContent = '已暂停';
+      pauseBtn.textContent = '▶ 继续';
+    } else {
+      statusDot.className = 'status-dot recording';
+      statusText.textContent = '录制中';
+      pauseBtn.textContent = '⏸ 暂停';
+    }
   } else {
-    toggleBtn.classList.remove('recording');
-    toggleBtn.classList.add('start');
-    startBtn.style.display = 'block';
+    startBtn.style.display = 'flex';
+    pauseBtn.style.display = 'none';
     stopBtn.style.display = 'none';
-    statusText.textContent = '点击开始录制';
+    statusDot.className = 'status-dot';
+    statusText.textContent = '等待录制';
+  }
+}
+
+// 添加步骤到悬浮窗
+function addStepToFloat(step) {
+  const container = document.getElementById('stepsList');
+  if (!container) return;
+  
+  const emptyState = container.querySelector('.empty-state');
+  if (emptyState) emptyState.remove();
+  
+  const item = document.createElement('div');
+  item.className = \`step-item action-\${step.action}\`;
+  
+  const time = new Date(step.timestamp || Date.now()).toLocaleTimeString();
+  const selector = step.selector || '';
+  const value = step.value || '';
+  const elementInfo = step.elementInfo ? 
+    \`\${step.elementInfo.tag}\${step.elementInfo.id ? '#' + step.elementInfo.id : ''}\` : '';
+  
+  item.innerHTML = \`
+    <div class="step-header">
+      <span class="step-action">\${step.action}</span>
+      <span class="step-time">\${time}</span>
+    </div>
+    <div class="step-selector">\${selector}</div>
+    \${value ? \`<div class="step-value">值: \${value}</div>\` : ''}
+    \${elementInfo ? \`<div class="step-element-info" style="font-size:10px;color:#666;margin-top:4px;">\${elementInfo}</div>\` : ''}
+  \`;
+  
+  container.insertBefore(item, container.firstChild);
+  
+  while (container.children.length > 50) {
+    container.removeChild(container.lastChild);
   }
 }
 
