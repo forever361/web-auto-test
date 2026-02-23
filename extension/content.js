@@ -249,8 +249,6 @@ function createFloatingPanel() {
   html += '#web-recorder-float .control-bar button { flex: 1; padding: 6px 8px; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 500; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 4px; white-space: nowrap; }';
   html += '#web-recorder-float .float-handle .title { font-size: 13px; }';
   html += '#web-recorder-float .float-handle .minimize-btn { cursor: pointer; opacity: 0.8; font-size: 16px; width: 20px; text-align: center; }';
-  html += '#web-recorder-float .float-body { background: #1e1e1e; border-radius: 0 0 8px 8px; width: 320px; max-height: 400px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }';
-  html += '#web-recorder-float .float-body.minimized { display: none; }';
   html += '#web-recorder-float .control-bar { display: flex; gap: 8px; padding: 12px; background: #2d2d2d; border-bottom: 1px solid #404040; }';
   html += '#web-recorder-float .control-bar button { flex: 1; padding: 8px 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 500; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 4px; }';
   html += '#web-recorder-float .control-bar .btn-start { background: #10b981; color: white; }';
@@ -268,7 +266,7 @@ function createFloatingPanel() {
   html += '#web-recorder-float .status-bar .coords { font-family: monospace; font-size: 11px; color: #888; }';
   html += '#web-recorder-float .float-body { background: #1e1e1e; border-radius: 0 0 8px 8px; width: 300px; height: 450px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }';
   html += '#web-recorder-float .status-bar { flex-shrink: 0; }';
-  html += '#web-recorder-float .steps-container { flex: 1; overflow-y: auto; padding: 8px; background: #1a1a1a; }';
+  html += '#web-recorder-float .steps-container { flex: 1; overflow-y: auto; padding: 8px; background: #1a1a1a; min-height: 150px; }';
   html += '#web-recorder-float .control-bar { flex-shrink: 0; }';
   html += '#web-recorder-float .step-item { background: #2d2d2d; border-radius: 4px; padding: 8px; margin-bottom: 4px; border-left: 3px solid #667eea; }';
   html += '#web-recorder-float .step-item.action-click { border-left-color: #3b82f6; }';
@@ -399,10 +397,8 @@ function updateFloatingUI(isRecording, isPaused) {
 
 function addStepToFloat(step) {
   var container = document.getElementById('stepsList');
+  console.log('[Content] addStepToFloat called, container:', container);
   if (!container) return;
-  
-  var emptyState = container.querySelector('.empty-state');
-  if (emptyState) emptyState.remove();
   
   var item = document.createElement('div');
   item.className = 'step-item action-' + step.action;
@@ -422,7 +418,9 @@ function addStepToFloat(step) {
   if (elementInfo) itemHtml += '<div class="step-element-info" style="font-size:10px;color:#666;margin-top:4px;">' + elementInfo + '</div>';
   
   item.innerHTML = itemHtml;
-  container.insertBefore(item, container.firstChild);
+  container.appendChild(item);
+  
+  console.log('[Content] Step added to float, total items:', container.children.length);
   
   while (container.children.length > 50) {
     container.removeChild(container.lastChild);
