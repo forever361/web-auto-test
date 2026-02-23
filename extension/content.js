@@ -441,5 +441,17 @@ function updateFloatingUI(isRecording) {
 
 // 初始化
 console.log('[Content] Script loaded');
-createFloatingPanel();
+
+// 延迟创建悬浮窗，等待 DOM 准备好
+function initFloatingPanel() {
+  if (document.body) {
+    createFloatingPanel();
+  } else {
+    document.addEventListener('DOMContentLoaded', () => {
+      createFloatingPanel();
+    });
+  }
+}
+
+initFloatingPanel();
 setupListeners();
