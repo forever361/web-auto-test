@@ -29,11 +29,11 @@ function sendStep(step) {
     console.error('[Background] Failed to send step:', err);
   });
   
-  // 广播给所有标签页的content script（用于悬浮窗显示）
-  chrome.tabs.query({}, (tabs) => {
-    tabs.forEach(tab => {
-      chrome.tabs.sendMessage(tab.id, {action: 'step', data: step}).catch(() => {});
-    });
+  // 只发送到悬浮窗所在的标签页
+  chrome.storage.local.get(['panelTabId'], function(result) {
+    if (result.panelTabId) {
+      chrome.tabs.sendMessage(result.panelTabId, {action: 'step', data: step}).catch(() => {});
+    }
   });
 }
 
@@ -46,18 +46,18 @@ function sendRecordingStatus(status) {
   }).catch(err => console.error('[Background] Status send failed:', err));
 }
 
-// 广播状态给popup和所有content script
+// 广播状态给popup和content script
 function broadcastStatus(status) {
   chrome.runtime.sendMessage({action: 'status', status, recording}).catch(() => {});
   
-  // 广播给所有标签页的content script
-  chrome.tabs.query({}, (tabs) => {
-    tabs.forEach(tab => {
-      chrome.tabs.sendMessage(tab.id, {
+  // 只发送到悬浮窗所在的标签页
+  chrome.storage.local.get(['panelTabId'], function(result) {
+    if (result.panelTabId) {
+      chrome.tabs.sendMessage(result.panelTabId, {
         action: 'recordingStatus',
         recording: recording
       }).catch(() => {});
-    });
+    }
   });
 }
 
