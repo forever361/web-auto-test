@@ -267,7 +267,9 @@ function createFloatingPanel() {
   html += '#web-recorder-float .status-bar .status-dot.paused { background: #f59e0b; }';
   html += '#web-recorder-float .status-bar .coords { font-family: monospace; font-size: 11px; color: #888; }';
   html += '#web-recorder-float .float-body { background: #1e1e1e; border-radius: 0 0 8px 8px; width: 300px; height: 450px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }';
+  html += '#web-recorder-float .status-bar { flex-shrink: 0; }';
   html += '#web-recorder-float .steps-container { flex: 1; overflow-y: auto; padding: 8px; background: #1a1a1a; }';
+  html += '#web-recorder-float .control-bar { flex-shrink: 0; }';
   html += '#web-recorder-float .step-item { background: #2d2d2d; border-radius: 4px; padding: 8px; margin-bottom: 4px; border-left: 3px solid #667eea; }';
   html += '#web-recorder-float .step-item.action-click { border-left-color: #3b82f6; }';
   html += '#web-recorder-float .step-item.action-input { border-left-color: #10b981; }';
@@ -283,18 +285,17 @@ function createFloatingPanel() {
   html += '</style>';
   html += '<div class="float-handle"><span class="title">🎤 Web Recorder</span><span class="minimize-btn" id="floatMinimizeBtn">−</span></div>';
   html += '<div class="float-body" id="floatBody">';
+  html += '<div class="status-bar">';
+  html += '<div class="status-text"><span class="status-dot" id="statusDot"></span><span id="statusText">等待录制</span></div>';
+  html += '<span class="coords" id="cursorCoords">x: 0, y: 0</span>';
+  html += '</div>';
+  html += '<div class="steps-container" id="stepsList"></div>';
   html += '<div class="control-bar">';
   html += '<button class="btn-start" id="floatStartBtn">▶ 开始</button>';
   html += '<button class="btn-pause" id="floatPauseBtn" style="display:none;">暂停</button>';
   html += '<button class="btn-stop" id="floatStopBtn" style="display:none;">⏹ 停止</button>';
   html += '</div>';
-  html += '<div class="status-bar">';
-  html += '<div class="status-text"><span class="status-dot" id="statusDot"></span><span id="statusText">等待录制</span></div>';
-  html += '<span class="coords" id="cursorCoords">x: 0, y: 0</span>';
   html += '</div>';
-  html += '<div class="steps-container" id="stepsList">';
-  html += '<div class="empty-state"><div class="icon">🎬</div><div>点击"开始"按钮开始录制</div></div>';
-  html += '</div></div>';
   
   panel.innerHTML = html;
   document.body.appendChild(panel);
