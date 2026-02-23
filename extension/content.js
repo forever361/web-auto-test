@@ -236,8 +236,12 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
 });
 
 function createFloatingPanel() {
-  if (document.getElementById('web-recorder-float')) return;
+  if (document.getElementById('web-recorder-float')) {
+    console.log('[Content] Panel already exists');
+    return;
+  }
   
+  console.log('[Content] Creating floating panel...');
   var panel = document.createElement('div');
   panel.id = 'web-recorder-float';
   
@@ -396,9 +400,16 @@ function updateFloatingUI(isRecording, isPaused) {
 }
 
 function addStepToFloat(step) {
+  console.log('[Content] addStepToFloat called, step:', step.action);
   var container = document.getElementById('stepsList');
-  console.log('[Content] addStepToFloat called, container:', container);
-  if (!container) return;
+  console.log('[Content] addStepToFloat container:', container);
+  console.log('[Content] panel exists:', !!document.getElementById('web-recorder-float'));
+  if (!container) {
+    console.log('[Content] Container not found, checking all elements...');
+    var allDivs = document.querySelectorAll('div');
+    console.log('[Content] Total divs on page:', allDivs.length);
+    return;
+  }
   
   var item = document.createElement('div');
   item.className = 'step-item action-' + step.action;
@@ -431,8 +442,11 @@ console.log('[Content] Script loaded');
 
 function initFloatingPanel() {
   // 请求显示悬浮窗的权限
+  console.log('[Content] initFloatingPanel called');
   chrome.runtime.sendMessage({action: 'requestPanel'}, function(response) {
+    console.log('[Content] requestPanel response:', response);
     if (response && response.showPanel) {
+      console.log('[Content] Creating floating panel...');
       if (document.body) {
         createFloatingPanel();
       } else {
@@ -440,6 +454,8 @@ function initFloatingPanel() {
           createFloatingPanel();
         });
       }
+    } else {
+      console.log('[Content] Panel not shown, panelTabId might be set to another tab');
     }
   });
 }
