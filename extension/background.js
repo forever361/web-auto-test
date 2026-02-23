@@ -100,8 +100,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 // 监听标签页更新
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (changeInfo.status === 'complete' && recording && tabId === currentTabId) {
-    chrome.tabs.sendMessage(tabId, {action: 'pageLoaded', url: tab.url}).catch(() => {});
+  if (changeInfo.status === 'complete') {
+    // 如果正在录制，通知新页面开始录制
+    if (recording) {
+      chrome.tabs.sendMessage(tabId, {action: 'startRecording'}, (response) => {
+        console.log('[Background] Notified new tab to start recording:', tabId);
+      });
+    }
+  }
+});
+
+// 监听标签页激活
+chrome.tabs.onActivated.addListener((activeInfo) => {
+  if (recording) {
+    currentTabId = activeInfo.tabId;
+    chrome.tabs.sendMessage(activeInfo.tabId, {action: 'startRecording'}, (response) => {
+      console.log('[Background] Notified activated tab to start recording:', activeInfo.tabId);
+    });
   }
 });
 

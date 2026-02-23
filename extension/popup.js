@@ -41,18 +41,7 @@ btnStart.addEventListener('click', async () => {
   const tab = await getCurrentTab();
   if (!tab.id) return;
   
-  // 先注入content script
-  try {
-    await chrome.scripting.executeScript({
-      target: {tabId: tab.id},
-      files: ['content.js']
-    });
-  } catch (e) {
-    // 可能已经注入了
-    console.log('Script already injected');
-  }
-  
-  // 发送开始录制消息
+  // 发送开始录制消息（content script 已经通过 content_scripts 自动注入）
   chrome.runtime.sendMessage({
     action: 'startRecording',
     tabId: tab.id
