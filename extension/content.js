@@ -197,6 +197,18 @@ function setupListeners() {
 chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
   console.log('[Content] Received message:', message.action);
   
+  // 刷新页面后重新请求显示面板
+  if (message.action === 'refreshPanel') {
+    chrome.runtime.sendMessage({action: 'requestPanel'}, function(response) {
+      if (response && response.showPanel) {
+        if (!document.getElementById('web-recorder-float')) {
+          createFloatingPanel();
+        }
+      }
+    });
+    sendResponse({success: true});
+  }
+  
   if (message.action === 'startRecording') {
     recording = true;
     paused = false;

@@ -83,6 +83,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             chrome.storage.local.set({panelTabId: sender.tab.id}, function() {
               sendResponse({showPanel: true});
             });
+          } else if (existingTabId === sender.tab.id) {
+            // 同一个标签页，刷新后重新显示
+            sendResponse({showPanel: true});
           } else {
             sendResponse({showPanel: false});
           }
@@ -193,3 +196,24 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
 });
 
 console.log('[Background] Extension loaded (HTTP mode)');
+
+// 监听标签页关闭，清除panelTabId
+chrome.tabs.onRemoved.addListener(function(tabId) {
+  chrome.storage.local.get(['panelTabId'], function(result) {
+    if (result.panelTabId === tabId) {
+      chrome.storage.local.set({panelTabId: null});
+    }
+  });
+});
+
+// 监听标签页更新，新页面可能需要重新获取panelTabId
+chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
+  if (changeInfo.status === 'complete') {
+    chrome.storage.local.get(['panelTabId'], function(result) {
+      // 如果没有panelTabId，第一个加载完成的页面将显示面板
+      if (!result.panelTabId) {
+        chrome.tabs.sendMessage(tabId, {action: 'refreshPanel'}, function() {});
+      }
+    });
+  }
+});
