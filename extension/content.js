@@ -380,20 +380,20 @@ function createFloatingPanel() {
   
   // 绑定事件
   const toggleBtn = document.getElementById('floatToggleBtn');
-  const panel = document.getElementById('floatPanel');
+  const floatPanel = document.getElementById('floatPanel');
   const startBtn = document.getElementById('floatStartBtn');
   const stopBtn = document.getElementById('floatStopBtn');
   const statusText = document.getElementById('floatStatus');
   
   toggleBtn.addEventListener('click', (e) => {
     e.stopPropagation();
-    panel.classList.toggle('show');
+    floatPanel.classList.toggle('show');
   });
   
   // 点击其他地方关闭面板
   document.addEventListener('click', (e) => {
-    if (!panel.contains(e.target)) {
-      panel.classList.remove('show');
+    if (!floatPanel.contains(e.target)) {
+      floatPanel.classList.remove('show');
     }
   });
   
