@@ -156,8 +156,9 @@ function setupListeners() {
   }
 }
 
-// 创建简单的悬浮按钮
+// 创建简单的悬浮按钮 - 所有页面都有
 function createFloatBtn() {
+  // 检查是否已存在
   if (document.getElementById('recorder-float-btn')) return;
   
   var btn = document.createElement('button');
@@ -167,7 +168,8 @@ function createFloatBtn() {
   
   document.body.appendChild(btn);
   
-  btn.addEventListener('click', function() {
+  btn.addEventListener('click', function(e) {
+    e.stopPropagation();
     if (!recording) {
       recording = true;
       stepCount = 0;
