@@ -260,7 +260,7 @@ function createFloatingPanel() {
   var html = '';
   html += '<style>';
   html += '#web-recorder-float { position: fixed; top: 100px; right: 20px; z-index: 2147483647; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 13px; color: #333; user-select: none; }';
-  html += '#web-recorder-float .float-handle { position: absolute; top: 0; left: 0; right: 0; height: 36px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px 8px 0 0; cursor: move; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; color: white; font-weight: 600; box-sizing: border-box; }';
+  html += '#web-recorder-float .float-handle { position: absolute; top: 0; left: 0; right: 0; height: 36px; background: #667eea; border-radius: 8px 8px 0 0; cursor: move; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; color: white; font-weight: 600; box-sizing: border-box; }';
   html += '#web-recorder-float .control-bar { display: flex; gap: 6px; padding: 10px; background: #2d2d2d; border-bottom: 1px solid #404040; }';
   html += '#web-recorder-float .control-bar button { flex: 1; padding: 6px 8px; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 500; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 4px; white-space: nowrap; }';
   html += '#web-recorder-float .float-handle .title { font-size: 13px; }';
@@ -280,9 +280,9 @@ function createFloatingPanel() {
   html += '#web-recorder-float .status-bar .status-dot.recording { background: #ef4444; animation: pulse 1s infinite; }';
   html += '#web-recorder-float .status-bar .status-dot.paused { background: #f59e0b; }';
   html += '#web-recorder-float .status-bar .coords { font-family: monospace; font-size: 11px; color: #888; }';
-  html += '#web-recorder-float .float-body { background: #1e1e1e; border-radius: 0 0 8px 8px; width: 300px; height: 450px; overflow: hidden; display: block; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }';
+  html += '#web-recorder-float .float-body { background: #fff; border-radius: 0 0 8px 8px; width: 300px; height: 450px; overflow: hidden; display: block; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }';
   html += '#web-recorder-float .status-bar { height: 30px; box-sizing: border-box; }';
-  html += '#web-recorder-float .steps-container { height: 340px; overflow-y: auto; padding: 8px; background: #1a1a1a; box-sizing: border-box; }';
+  html += '#web-recorder-float .steps-container { height: 340px; overflow-y: auto; padding: 8px; background: #fff; box-sizing: border-box; }';
   html += '#web-recorder-float .control-bar { height: 44px; box-sizing: border-box; }';
   html += '#web-recorder-float .step-item { background: #2d2d2d; border-radius: 4px; padding: 8px; margin-bottom: 4px; border-left: 3px solid #667eea; color: #fff; }';
   html += '#web-recorder-float .step-item.action-click { border-left-color: #3b82f6; }';
@@ -414,11 +414,21 @@ function updateFloatingUI(isRecording, isPaused) {
 }
 
 function addStepToFloat(step) {
-  // 发送消息给页面的 JavaScript，让页面自己渲染
-  window.postMessage({
-    type: 'WEB_RECORDER_STEP',
-    step: step
-  }, '*');
+  var container = document.getElementById('stepsList');
+  if (!container) return;
+  
+  var time = new Date(step.timestamp || Date.now()).toLocaleTimeString();
+  var selector = step.selector || '';
+  var value = step.value || '';
+  
+  // 用最简单的表格，不用任何CSS
+  var html = '<table border="1" cellpadding="2" cellspacing="0" style="width:100%;font-size:10px;color:black;background:white;margin-bottom:2px;">';
+  html += '<tr><td>' + step.action + '</td><td>' + time + '</td></tr>';
+  html += '<tr><td colspan="2">' + selector + '</td></tr>';
+  if (value) html += '<tr><td colspan="2">值:' + value + '</td></tr>';
+  html += '</table>';
+  
+  container.innerHTML = html + container.innerHTML;
 }
 
 console.log('[Content] Script loaded');
