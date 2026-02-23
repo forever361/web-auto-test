@@ -466,6 +466,14 @@
                 addStep(data);
             });
             
+            // 监听扩展发来的消息
+            window.addEventListener('message', (event) => {
+                if (event.data && event.data.type === 'WEB_RECORDER_STEP') {
+                    console.log('收到扩展步骤:', event.data.step);
+                    addStep(event.data.step);
+                }
+            });
+            
             socket.on('recordingStatus', (data) => {
                 console.log('录制状态:', data);
                 updateRecordingStatus(data);
