@@ -280,10 +280,10 @@ function createFloatingPanel() {
   html += '#web-recorder-float .status-bar .status-dot.recording { background: #ef4444; animation: pulse 1s infinite; }';
   html += '#web-recorder-float .status-bar .status-dot.paused { background: #f59e0b; }';
   html += '#web-recorder-float .status-bar .coords { font-family: monospace; font-size: 11px; color: #888; }';
-  html += '#web-recorder-float .float-body { background: #1e1e1e; border-radius: 0 0 8px 8px; width: 300px; height: 450px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }';
-  html += '#web-recorder-float .status-bar { flex-shrink: 0; height: 30px; box-sizing: border-box; }';
-  html += '#web-recorder-float .steps-container { flex: 1; overflow-y: auto; padding: 8px; background: #1a1a1a; min-height: 200px; box-sizing: border-box; display: block; }';
-  html += '#web-recorder-float .control-bar { flex-shrink: 0; height: 44px; box-sizing: border-box; }';
+  html += '#web-recorder-float .float-body { background: #1e1e1e; border-radius: 0 0 8px 8px; width: 300px; height: 450px; overflow: hidden; display: block; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }';
+  html += '#web-recorder-float .status-bar { height: 30px; box-sizing: border-box; }';
+  html += '#web-recorder-float .steps-container { height: 340px; overflow-y: auto; padding: 8px; background: #1a1a1a; box-sizing: border-box; }';
+  html += '#web-recorder-float .control-bar { height: 44px; box-sizing: border-box; }';
   html += '#web-recorder-float .step-item { background: #2d2d2d; border-radius: 4px; padding: 8px; margin-bottom: 4px; border-left: 3px solid #667eea; }';
   html += '#web-recorder-float .step-item.action-click { border-left-color: #3b82f6; }';
   html += '#web-recorder-float .step-item.action-input { border-left-color: #10b981; }';
