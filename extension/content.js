@@ -1,5 +1,5 @@
 // Chrome扩展 - 内容脚本
-// 负责：监听页面操作、发送步骤到页面
+// 负责：监听页面操作、发送步骤到页面和background
 
 let recording = false;
 let stepCount = 0;
@@ -108,11 +108,9 @@ function sendStep(action, data) {
   Object.assign(step, data);
   
   // 发送到 background
-  chrome.runtime.sendMessage({action: 'step', data: step}, function(response) {
-    console.log('[Content] Step sent:', step.action);
-  });
+  chrome.runtime.sendMessage({action: 'step', data: step}, function(response) {});
   
-  // 同时发送到页面
+  // 同时发送到页面，让页面原生悬浮窗显示
   window.postMessage({type: 'WEB_RECORDER_STEP', step: step}, '*');
 }
 
@@ -158,20 +156,55 @@ function setupListeners() {
   }
 }
 
+// 创建简单的悬浮按钮
+function createFloatBtn() {
+  if (document.getElementById('recorder-float-btn')) return;
+  
+  var btn = document.createElement('button');
+  btn.id = 'recorder-float-btn';
+  btn.style.cssText = 'position:fixed;top:100px;right:20px;z-index:999999;padding:10px 20px;background:#10b981;color:white;border:none;border-radius:20px;cursor:pointer;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,0.3);';
+  btn.textContent = '🎤 开始录制';
+  
+  document.body.appendChild(btn);
+  
+  btn.addEventListener('click', function() {
+    if (!recording) {
+      recording = true;
+      stepCount = 0;
+      btn.style.background = '#ef4444';
+      btn.textContent = '⏹ 停止录制';
+      chrome.runtime.sendMessage({action: 'startRecording'}, function() {});
+    } else {
+      recording = false;
+      btn.style.background = '#10b981';
+      btn.textContent = '🎤 开始录制';
+      chrome.runtime.sendMessage({action: 'stopRecording'}, function() {});
+    }
+  });
+}
+
 chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
   if (message.action === 'startRecording') {
     recording = true;
-    paused = false;
-    stepCount = 0;
-    sendResponse({success: true, recording: true});
+    var btn = document.getElementById('recorder-float-btn');
+    if (btn) {
+      btn.style.background = '#ef4444';
+      btn.textContent = '⏹ 停止录制';
+    }
+    sendResponse({success: true});
   }
   else if (message.action === 'stopRecording') {
     recording = false;
-    paused = false;
-    sendResponse({success: true, recording: false});
+    var btn = document.getElementById('recorder-float-btn');
+    if (btn) {
+      btn.style.background = '#10b981';
+      btn.textContent = '🎤 开始录制';
+    }
+    sendResponse({success: true});
   }
   return true;
 });
 
 console.log('[Content] Extension loaded');
+createFloatBtn();
 setupListeners();
