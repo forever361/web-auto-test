@@ -415,39 +415,29 @@ function addStepToFloat(step) {
   console.log('[Content] addStepToFloat called, step:', step.action);
   var container = document.getElementById('stepsList');
   console.log('[Content] addStepToFloat container:', container);
-  console.log('[Content] panel exists:', !!document.getElementById('web-recorder-float'));
+  console.log('[Content] container innerHTML before:', container.innerHTML);
+  console.log('[Content] container children count before:', container.children.length);
+  
   if (!container) {
-    console.log('[Content] Container not found, checking all elements...');
-    var allDivs = document.querySelectorAll('div');
-    console.log('[Content] Total divs on page:', allDivs.length);
+    console.log('[Content] Container not found!');
     return;
   }
   
   var item = document.createElement('div');
   item.className = 'step-item action-' + step.action;
+  item.style.border = '1px solid red'; // 添加红色边框便于调试
+  item.style.margin = '5px';
+  item.style.padding = '5px';
+  item.style.background = '#ff0';
+  item.style.color = '#000';
   
   var time = new Date(step.timestamp || Date.now()).toLocaleTimeString();
-  var selector = step.selector || '';
-  var value = step.value || '';
-  var elementInfo = '';
-  if (step.elementInfo) {
-    elementInfo = step.elementInfo.tag;
-    if (step.elementInfo.id) elementInfo += '#' + step.elementInfo.id;
-  }
+  item.innerHTML = '<b>' + step.action + '</b> ' + time + '<br/>' + (step.selector || '');
   
-  var itemHtml = '<div class="step-header"><span class="step-action">' + step.action + '</span><span class="step-time">' + time + '</span></div>';
-  itemHtml += '<div class="step-selector">' + selector + '</div>';
-  if (value) itemHtml += '<div class="step-value">值: ' + value + '</div>';
-  if (elementInfo) itemHtml += '<div class="step-element-info" style="font-size:10px;color:#666;margin-top:4px;">' + elementInfo + '</div>';
-  
-  item.innerHTML = itemHtml;
   container.appendChild(item);
   
-  console.log('[Content] Step added to float, total items:', container.children.length);
-  
-  while (container.children.length > 50) {
-    container.removeChild(container.lastChild);
-  }
+  console.log('[Content] Step added, container children count after:', container.children.length);
+  console.log('[Content] container innerHTML after:', container.innerHTML.substring(0, 200));
 }
 
 console.log('[Content] Script loaded');
