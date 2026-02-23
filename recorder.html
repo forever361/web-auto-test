@@ -415,8 +415,8 @@
         </div>
     </div>
     
-    <!-- 悬浮窗 - 默认隐藏，只使用扩展的悬浮窗 -->
-    <div class="float-window" id="floatWindow" style="display: none;">
+    <!-- 使用页面原生的悬浮窗 -->
+    <div class="float-window" id="floatWindow">
         <div class="float-header">
             <div class="float-status">
                 <span class="status-dot" id="floatRecordStatus"></span>
@@ -679,6 +679,14 @@
             win.classList.toggle('show');
             document.getElementById('btnFloat').classList.toggle('btn-primary');
         }
+        
+        // 页面加载完成后自动显示悬浮窗
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                const win = document.getElementById('floatWindow');
+                win.classList.add('show');
+            }, 1000);
+        });
         
         // 下载扩展
         function downloadExtension() {
