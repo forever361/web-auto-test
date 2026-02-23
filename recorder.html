@@ -342,14 +342,6 @@
                 <span class="status-dot" id="wsStatus"></span>
                 <span id="wsStatusText">未连接</span>
             </div>
-            <div class="status-item">
-                <span>📊 录制步骤: </span>
-                <span id="stepCount" style="color: #e94560; font-weight: bold;">0</span>
-            </div>
-            <div class="status-item">
-                <span class="status-dot" id="recordStatus"></span>
-                <span id="recordStatusText">等待录制</span>
-            </div>
         </div>
         
         <!-- 功能卡片 -->
@@ -357,45 +349,14 @@
             <h3>📦 扩展与录制</h3>
             <div class="btn-group">
                 <button class="btn-info" onclick="downloadExtension()">📦 下载扩展</button>
-                <button class="btn-primary" onclick="startRecording()" id="btnStart">
-                    ▶️ 开始录制
-                </button>
-                <button class="btn-warning" onclick="pauseRecording()" id="btnPause" disabled>
-                    ⏸ 暂停
-                </button>
-                <button class="btn-secondary" onclick="stopRecording()" id="btnStop" disabled>
-                    ⏹ 停止
-                </button>
                 <button class="btn-success" onclick="exportCase()">💾 导出用例</button>
             </div>
             <p style="color: rgba(255,255,255,0.6); font-size: 13px; margin-top: 10px;">
-                📌 使用流程: 1) 下载并安装扩展 → 2) 在Chrome中加载扩展 → 3) 点击扩展图标开始录制
+                📌 使用流程: 1) 下载并安装扩展 → 2) 在Chrome中加载扩展 → 3) 点击扩展按钮开始录制
             </p>
         </div>
         
         <!-- 统计 -->
-        <div class="card">
-            <h3>📈 录制统计</h3>
-            <div class="stats-bar">
-                <div class="stat-item">
-                    <div class="stat-value" id="statClicks">0</div>
-                    <div class="stat-label">点击次数</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-value" id="statInputs">0</div>
-                    <div class="stat-label">输入次数</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-value" id="statNavigates">0</div>
-                    <div class="stat-label">页面跳转</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-value" id="statScrolls">0</div>
-                    <div class="stat-label">滚动次数</div>
-                </div>
-            </div>
-        </div>
-        
         <!-- 步骤列表 -->
         <div class="card">
             <h3>📝 录制步骤列表</h3>
@@ -415,12 +376,13 @@
         </div>
     </div>
     
-    <!-- 使用页面原生的悬浮窗 -->
+    <!-- 悬浮窗 -->
     <div class="float-window" id="floatWindow">
         <div class="float-header">
             <div class="float-status">
                 <span class="status-dot" id="floatRecordStatus"></span>
                 <span id="floatTitle">录制监控</span>
+                <span style="margin-left:10px;font-size:12px;">📊 <span id="floatStepCount">0</span>步</span>
             </div>
             <button class="float-close" onclick="toggleFloatWindow()">×</button>
         </div>
@@ -431,8 +393,11 @@
             </div>
         </div>
         <div class="float-footer">
-            <button class="btn-stop" onclick="clearSteps()">清空</button>
-            <button class="btn-success" onclick="exportCase()">导出用例</button>
+            <span style="font-size:11px;">🖱<span id="floatClicks">0</span> | ⌨️<span id="floatInputs">0</span> | 🔗<span id="floatNavigates">0</span></span>
+            <div>
+                <button class="btn-stop" onclick="clearSteps()">清空</button>
+                <button class="btn-success" onclick="exportCase()">导出</button>
+            </div>
         </div>
     </div>
     
@@ -555,11 +520,28 @@
         
         // 更新统计显示
         function updateStats() {
-            document.getElementById('statClicks').textContent = stats.click;
-            document.getElementById('statInputs').textContent = stats.input;
-            document.getElementById('statNavigates').textContent = stats.navigate;
-            document.getElementById('statScrolls').textContent = stats.scroll;
-            document.getElementById('stepCount').textContent = steps.length;
+            // 更新页面统计（如果元素存在）
+            if (document.getElementById('statClicks')) {
+                document.getElementById('statClicks').textContent = stats.click;
+                document.getElementById('statInputs').textContent = stats.input;
+                document.getElementById('statNavigates').textContent = stats.navigate;
+                document.getElementById('statScrolls').textContent = stats.scroll;
+                document.getElementById('stepCount').textContent = steps.length;
+            }
+            
+            // 更新悬浮窗统计
+            if (document.getElementById('floatStepCount')) {
+                document.getElementById('floatStepCount').textContent = steps.length;
+            }
+            if (document.getElementById('floatClicks')) {
+                document.getElementById('floatClicks').textContent = stats.click;
+            }
+            if (document.getElementById('floatInputs')) {
+                document.getElementById('floatInputs').textContent = stats.input;
+            }
+            if (document.getElementById('floatNavigates')) {
+                document.getElementById('floatNavigates').textContent = stats.navigate;
+            }
         }
         
         // 渲染步骤列表
