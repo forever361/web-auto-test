@@ -156,31 +156,35 @@ function setupListeners() {
   }
 }
 
-// 创建简单的悬浮按钮 - 所有页面都有
+// 创建悬浮按钮 - 只在一个页面显示
 function createFloatBtn() {
-  // 检查是否已存在
-  if (document.getElementById('recorder-float-btn')) return;
+  // 请求显示权限
+  chrome.runtime.sendMessage({action: 'requestPanel'}, function(response) {
+    if (response && response.showPanel) {
+      if (document.getElementById('recorder-float-btn')) return;
   
-  var btn = document.createElement('button');
-  btn.id = 'recorder-float-btn';
-  btn.style.cssText = 'position:fixed;top:100px;right:20px;z-index:999999;padding:10px 20px;background:#10b981;color:white;border:none;border-radius:20px;cursor:pointer;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,0.3);';
-  btn.textContent = '🎤 开始录制';
-  
-  document.body.appendChild(btn);
-  
-  btn.addEventListener('click', function(e) {
-    e.stopPropagation();
-    if (!recording) {
-      recording = true;
-      stepCount = 0;
-      btn.style.background = '#ef4444';
-      btn.textContent = '⏹ 停止录制';
-      chrome.runtime.sendMessage({action: 'startRecording'}, function() {});
-    } else {
-      recording = false;
-      btn.style.background = '#10b981';
+      var btn = document.createElement('button');
+      btn.id = 'recorder-float-btn';
+      btn.style.cssText = 'position:fixed;top:100px;right:20px;z-index:999999;padding:10px 20px;background:#10b981;color:white;border:none;border-radius:20px;cursor:pointer;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,0.3);';
       btn.textContent = '🎤 开始录制';
-      chrome.runtime.sendMessage({action: 'stopRecording'}, function() {});
+  
+      document.body.appendChild(btn);
+  
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (!recording) {
+          recording = true;
+          stepCount = 0;
+          btn.style.background = '#ef4444';
+          btn.textContent = '⏹ 停止录制';
+          chrome.runtime.sendMessage({action: 'startRecording'}, function() {});
+        } else {
+          recording = false;
+          btn.style.background = '#10b981';
+          btn.textContent = '🎤 开始录制';
+          chrome.runtime.sendMessage({action: 'stopRecording'}, function() {});
+        }
+      });
     }
   });
 }
