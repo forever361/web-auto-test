@@ -65,6 +65,33 @@ function broadcastStatus(status) {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log('[Background] Received message:', message.action);
   
+  // 处理悬浮窗显示请求 - 只在第一个标签页显示
+  if (message.action === 'requestPanel') {
+    chrome.storage.local.get(['panelTabId'], function(result) {
+      const existingTabId = result.panelTabId;
+      
+      // 如果没有记录或者记录的标签页已关闭，则当前标签页显示
+      if (!existingTabId) {
+        chrome.storage.local.set({panelTabId: sender.tab.id}, function() {
+          sendResponse({showPanel: true});
+        });
+      } else {
+        // 检查标签页是否还存在
+        chrome.tabs.get(existingTabId, function(tab) {
+          if (chrome.runtime.lastError || !tab) {
+            // 标签页已关闭，重新设置
+            chrome.storage.local.set({panelTabId: sender.tab.id}, function() {
+              sendResponse({showPanel: true});
+            });
+          } else {
+            sendResponse({showPanel: false});
+          }
+        });
+      }
+    });
+    return true;
+  }
+  
   if (message.action === 'startRecording') {
     recording = true;
     currentTabId = message.tabId;

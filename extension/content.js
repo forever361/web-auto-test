@@ -432,13 +432,18 @@ function addStepToFloat(step) {
 console.log('[Content] Script loaded');
 
 function initFloatingPanel() {
-  if (document.body) {
-    createFloatingPanel();
-  } else {
-    document.addEventListener('DOMContentLoaded', function() {
-      createFloatingPanel();
-    });
-  }
+  // 请求显示悬浮窗的权限
+  chrome.runtime.sendMessage({action: 'requestPanel'}, function(response) {
+    if (response && response.showPanel) {
+      if (document.body) {
+        createFloatingPanel();
+      } else {
+        document.addEventListener('DOMContentLoaded', function() {
+          createFloatingPanel();
+        });
+      }
+    }
+  });
 }
 
 initFloatingPanel();
