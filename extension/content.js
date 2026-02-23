@@ -251,13 +251,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     recording = true;
     stepCount = 0;
     console.log('[Content] Recording started');
+    updateFloatingUI(true);
     sendResponse({success: true, recording: true});
   }
   
   else if (message.action === 'stopRecording') {
     recording = false;
     console.log('[Content] Recording stopped');
+    updateFloatingUI(false);
     sendResponse({success: true, recording: false});
+  }
+  
+  else if (message.action === 'recordingStatus') {
+    // 接收全局录制状态更新
+    recording = message.recording;
+    updateFloatingUI(recording);
+    sendResponse({success: true});
   }
   
   else if (message.action === 'pageLoaded') {
@@ -274,6 +283,163 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return true;
 });
 
+// 创建悬浮窗
+function createFloatingPanel() {
+  // 如果已存在则不创建
+  if (document.getElementById('web-recorder-float')) return;
+  
+  const panel = document.createElement('div');
+  panel.id = 'web-recorder-float';
+  panel.innerHTML = `
+    <style>
+      #web-recorder-float {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 2147483647;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: 14px;
+      }
+      #web-recorder-float .recorder-btn {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        border: none;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s;
+        font-size: 20px;
+      }
+      #web-recorder-float .recorder-btn.start {
+        background: #e94560;
+        color: white;
+      }
+      #web-recorder-float .recorder-btn.recording {
+        background: #e94560;
+        color: white;
+        animation: pulse 1.5s infinite;
+      }
+      #web-recorder-float .recorder-panel {
+        position: absolute;
+        top: 60px;
+        right: 0;
+        background: white;
+        border-radius: 8px;
+        padding: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        display: none;
+        min-width: 150px;
+      }
+      #web-recorder-float .recorder-panel.show {
+        display: block;
+      }
+      #web-recorder-float .recorder-panel button {
+        width: 100%;
+        padding: 10px 16px;
+        margin: 4px 0;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.2s;
+      }
+      #web-recorder-float .recorder-panel .btn-start {
+        background: #2ecc71;
+        color: white;
+      }
+      #web-recorder-float .recorder-panel .btn-stop {
+        background: #e94560;
+        color: white;
+      }
+      #web-recorder-float .recorder-panel .btn-stop:hover {
+        background: #c0392b;
+      }
+      #web-recorder-float .recorder-panel .status-text {
+        text-align: center;
+        padding: 8px;
+        color: #333;
+        font-weight: 500;
+      }
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+      }
+    </style>
+    <button class="recorder-btn start" id="floatToggleBtn">🎤</button>
+    <div class="recorder-panel" id="floatPanel">
+      <div class="status-text" id="floatStatus">点击开始录制</div>
+      <button class="btn-start" id="floatStartBtn">▶ 开始录制</button>
+      <button class="btn-stop" id="floatStopBtn" style="display:none;">⏹ 停止录制</button>
+    </div>
+  `;
+  
+  document.body.appendChild(panel);
+  
+  // 绑定事件
+  const toggleBtn = document.getElementById('floatToggleBtn');
+  const panel = document.getElementById('floatPanel');
+  const startBtn = document.getElementById('floatStartBtn');
+  const stopBtn = document.getElementById('floatStopBtn');
+  const statusText = document.getElementById('floatStatus');
+  
+  toggleBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    panel.classList.toggle('show');
+  });
+  
+  // 点击其他地方关闭面板
+  document.addEventListener('click', (e) => {
+    if (!panel.contains(e.target)) {
+      panel.classList.remove('show');
+    }
+  });
+  
+  // 开始录制
+  startBtn.addEventListener('click', () => {
+    recording = true;
+    stepCount = 0;
+    updateFloatingUI(true);
+    chrome.runtime.sendMessage({action: 'startRecording'}, () => {});
+    panel.classList.remove('show');
+  });
+  
+  // 停止录制
+  stopBtn.addEventListener('click', () => {
+    recording = false;
+    updateFloatingUI(false);
+    chrome.runtime.sendMessage({action: 'stopRecording'}, () => {});
+    panel.classList.remove('show');
+  });
+  
+  console.log('[Content] Floating panel created');
+}
+
+// 更新悬浮窗状态
+function updateFloatingUI(isRecording) {
+  const toggleBtn = document.getElementById('floatToggleBtn');
+  const startBtn = document.getElementById('floatStartBtn');
+  const stopBtn = document.getElementById('floatStopBtn');
+  const statusText = document.getElementById('floatStatus');
+  
+  if (isRecording) {
+    toggleBtn.classList.remove('start');
+    toggleBtn.classList.add('recording');
+    startBtn.style.display = 'none';
+    stopBtn.style.display = 'block';
+    statusText.textContent = '🔴 录制中...';
+  } else {
+    toggleBtn.classList.remove('recording');
+    toggleBtn.classList.add('start');
+    startBtn.style.display = 'block';
+    stopBtn.style.display = 'none';
+    statusText.textContent = '点击开始录制';
+  }
+}
+
 // 初始化
 console.log('[Content] Script loaded');
+createFloatingPanel();
 setupListeners();

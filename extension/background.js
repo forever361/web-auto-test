@@ -38,9 +38,19 @@ function sendRecordingStatus(status) {
   }).catch(err => console.error('[Background] Status send failed:', err));
 }
 
-// 广播状态给popup
+// 广播状态给popup和所有content script
 function broadcastStatus(status) {
   chrome.runtime.sendMessage({action: 'status', status, recording}).catch(() => {});
+  
+  // 广播给所有标签页的content script
+  chrome.tabs.query({}, (tabs) => {
+    tabs.forEach(tab => {
+      chrome.tabs.sendMessage(tab.id, {
+        action: 'recordingStatus',
+        recording: recording
+      }).catch(() => {});
+    });
+  });
 }
 
 // 监听来自popup的消息
@@ -53,18 +63,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     
     sendRecordingStatus({ recording: true, paused: false });
     
-    // 通知content script开始录制
-    if (currentTabId) {
-      chrome.tabs.sendMessage(currentTabId, {action: 'startRecording'}, (response) => {
-        console.log('[Background] Content script response:', response);
-        sendResponse({success: true, recording: true});
+    // 通知所有标签页开始录制
+    chrome.tabs.query({}, (tabs) => {
+      tabs.forEach(tab => {
+        chrome.tabs.sendMessage(tab.id, {action: 'startRecording'}, (response) => {
+          console.log('[Background] Notified tab to start recording:', tab.id);
+        });
       });
-    } else {
-      sendResponse({success: false, error: 'No tab id'});
-    }
+    });
     
     broadcastStatus('recording');
-    return true; // 异步响应
+    sendResponse({success: true, recording: true});
+    return true;
   }
   
   else if (message.action === 'stopRecording') {
@@ -72,11 +82,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     
     sendRecordingStatus({ recording: false, paused: false });
     
-    if (currentTabId) {
-      chrome.tabs.sendMessage(currentTabId, {action: 'stopRecording'}, (response) => {
-        console.log('[Background] Stop response:', response);
+    // 通知所有标签页停止录制
+    chrome.tabs.query({}, (tabs) => {
+      tabs.forEach(tab => {
+        chrome.tabs.sendMessage(tab.id, {action: 'stopRecording'}, (response) => {
+          console.log('[Background] Notified tab to stop recording:', tab.id);
+        });
       });
-    }
+    });
     
     broadcastStatus('stopped');
     sendResponse({success: true, recording: false});
