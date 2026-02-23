@@ -414,23 +414,21 @@ function updateFloatingUI(isRecording, isPaused) {
 }
 
 function addStepToFloat(step) {
-  console.log('[Content] addStepToFloat called, step:', step.action);
   var container = document.getElementById('stepsList');
-  
   if (!container) return;
   
   var item = document.createElement('div');
+  // 使用内联样式确保显示
+  item.style.cssText = 'background:#2d2d2d !important; border-radius:4px !important; padding:8px !important; margin-bottom:4px !important; border-left:3px solid #667eea !important; color:#fff !important; display:block !important;';
   item.className = 'step-item action-' + step.action;
   
   var time = new Date(step.timestamp || Date.now()).toLocaleTimeString();
   var selector = step.selector || '';
   var value = step.value || '';
   
-  item.innerHTML = '<div class="step-header"><span class="step-number">#' + (container.children.length + 1) + '</span><span class="step-action">' + step.action + '</span><span class="step-time">' + time + '</span></div><div class="step-details"><span class="step-selector">' + selector + '</span></div>' + (value ? '<div class="step-value">值: ' + value + '</div>' : '');
+  item.innerHTML = '<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="background:#667eea;color:#fff;padding:1px 6px;border-radius:3px;font-size:10px;">' + step.action + '</span><span style="font-size:9px;color:#888;">' + time + '</span></div><div style="font-family:monospace;font-size:10px;color:#10b981;background:#1e1e1e;padding:3px 6px;border-radius:3px;margin-top:4px;word-break:break-all;">' + selector + '</div>' + (value ? '<div style="font-size:10px;color:#f59e0b;margin-top:4px;">值: ' + value + '</div>' : '');
   
   container.appendChild(item);
-  
-  // 自动滚动到底部
   container.scrollTop = container.scrollHeight;
 }
 
